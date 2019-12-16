@@ -1,0 +1,75 @@
+---
+title: "Course Project"
+
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Executive Summary
+
+This document presents an analysis of the 'mtcars' dataset. This analysis wants to explain if there is some kind of relationship between miles per gallon and other variables presented in the data. The questions we want to answer in particular are the following:
+
+1) Is an automatic or manual transmission better for MPG?
+
+2) Quantify the MPG difference between automatic and manual transmissions?
+
+From our analysis we can conclude that manual transmission is better for MPG(1.8 units higher)
+
+## Exploratory Analysis
+
+```{r, echo=TRUE}
+mtcars <- mtcars
+str(mtcars)
+names(mtcars)[9] <- paste('transmission')
+mtcars$transmission <- factor(mtcars$transmission,labels = c('Automatic','Manual'))
+mtcars$cyl  <- factor(mtcars$cyl)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+mtcars$vs <- factor(mtcars$vs,labels = c('V-shaped','straight'))
+summary(mtcars)
+```
+
+## Regression Analysis
+
+```{r, echo=TRUE}
+Auto <- mtcars[mtcars$transmission=='Automatic',]
+Manu <- mtcars[mtcars$transmission=='Manual',]
+mean(Manu$mpg)-mean(Auto$mpg) 
+```
+We can see that the difference of 7.24 is significant so we conduct a t.test
+```{r,echo=TRUE}
+ttest <- t.test(Auto$mpg,Manu$mpg)
+ttest$conf.int
+ttest$p.value < 0.05
+```
+We can see that the confidence interval does not contain 0 and the p-value is less than  0.05 so we can reject the null hyphotesis(no difference in means).
+
+Now we can try to see the relationship between MPG and transmission to see if they are related and if the variance in MPG is explain by transmission. And also how much of this variation is explain by the model(R2)
+```{r,echo=TRUE}
+model_1 <- lm(mpg~transmission,data = mtcars)
+summary(model_1)
+```
+The intercept tells us that the median of Automatic is 17.14 and the median of Manual is 7.24 units higher. The p-value for this model is 0.00028, which tells us that the coefficients are statistically significant. Finally, Transmission explains 36% of the variance between means, it might be suitable to explore more variables so the variance can be explained better. Now we compute a second model.
+```{r,echo=TRUE}
+model2 <- lm(mpg~transmission+cyl+disp+hp+wt,data = mtcars)
+summary(model2)
+anova(model_1,model2)
+```
+In this second model we can see that there are other variables that are statistically significant and now the variance in MPG is exaplained better with the inclussion of other variables (R-squared=87%). The p-value also is less than 0.05. And we can conclude that having a manual transmission could lead to a difference in means of 1.81 in MPG. Finally, check for homoskedastic in the appendix and according to the behaviour of the residuals this assumption holds.
+
+## Appendix
+```{r,echo=TRUE}
+boxplot(mpg~transmission,data = mtcars,col=c('green','light green'),ylab='Miles per gallon',xlab='Transmission',main='Comparing Transmission Means')
+```
+
+```{r,echo=TRUE}
+pairs(mpg~.,data = mtcars,col='blue')
+```
+
+```{r,echo=TRUE}
+par(mfrow = c(2,2))
+plot(model2)
+```
